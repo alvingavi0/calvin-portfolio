@@ -164,10 +164,13 @@ function createAdminModal() {
         const info = document.getElementById('admin-modal-info');
         const error = document.getElementById('admin-modal-error');
 
-        adminMode = exists ? 'login' : 'signup';
-        if (error) error.style.display = 'none';
+        if (error) {
+            error.style.display = 'none';
+            error.textContent = 'Invalid password';
+        }
 
         if (exists) {
+            adminMode = 'login';
             title.textContent = 'Admin Login';
             if (info) info.textContent = 'Enter your existing admin password to continue.';
             form.innerHTML = `
@@ -175,9 +178,10 @@ function createAdminModal() {
                 <button type="submit" class="btn btn-primary">Login</button>
                 <div class="modal-divider">or</div>
                 <button type="button" id="google-auth-btn" class="btn btn-google">Continue with Google</button>
-                <button type="button" id="admin-switch-mode" class="btn btn-outline">Create password instead</button>
+                <button type="button" id="admin-switch-mode" class="btn btn-outline">Reset / Change password</button>
             `;
         } else {
+            adminMode = 'signup';
             title.textContent = 'Create Admin Password';
             if (info) info.textContent = 'No admin password set currently. Create one and you will be logged in automatically.';
             form.innerHTML = `
@@ -186,7 +190,6 @@ function createAdminModal() {
                 <button type="submit" class="btn btn-primary">Create</button>
                 <div class="modal-divider">or</div>
                 <button type="button" id="google-auth-btn" class="btn btn-google">Continue with Google</button>
-                <button type="button" id="admin-switch-mode" class="btn btn-outline">Have password? Login instead</button>
             `;
         }
 
@@ -195,7 +198,40 @@ function createAdminModal() {
 
         const switchBtn = document.getElementById('admin-switch-mode');
         if (switchBtn) {
-            switchBtn.addEventListener('click', () => renderAuthForm(!exists));
+            switchBtn.addEventListener('click', () => renderResetForm());
+        }
+    }
+
+    function renderResetForm() {
+        adminMode = 'reset';
+        const form = document.getElementById('admin-modal-form');
+        const title = document.getElementById('admin-modal-title');
+        const info = document.getElementById('admin-modal-info');
+        const error = document.getElementById('admin-modal-error');
+
+        if (error) {
+            error.style.display = 'none';
+            error.textContent = 'Invalid password';
+        }
+
+        title.textContent = 'Reset Admin Password';
+        if (info) info.textContent = 'Enter current password and new password to update.';
+        form.innerHTML = `
+            <input type="password" id="admin-modal-current" placeholder="Current password" required autofocus />
+            <input type="password" id="admin-modal-pwd" placeholder="New password" required />
+            <input type="password" id="admin-modal-confirm" placeholder="Confirm new password" required />
+            <button type="submit" class="btn btn-primary">Reset password</button>
+            <div class="modal-divider">or</div>
+            <button type="button" id="google-auth-btn" class="btn btn-google">Continue with Google</button>
+            <button type="button" id="admin-switch-mode" class="btn btn-outline">Back to login</button>
+        `;
+
+        attachModalSubmitHandler();
+        attachGoogleButton();
+
+        const switchBtn = document.getElementById('admin-switch-mode');
+        if (switchBtn) {
+            switchBtn.addEventListener('click', () => renderAuthForm(true));
         }
     }
 
@@ -238,9 +274,8 @@ function attachModalSubmitHandler() {
             errorEl.textContent = 'Invalid password';
         }
 
-        const pwd = document.getElementById('admin-modal-pwd').value;
-
         if (adminMode === 'login') {
+            const pwd = document.getElementById('admin-modal-pwd').value;
             const res = await fetch('/login', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -253,35 +288,93 @@ function attachModalSubmitHandler() {
             }
 
             if (errorEl) {
-                errorEl.textContent = 'Wrong password. Please try again or create a new one.';
+                errorEl.textContent = 'Wrong password. Please try again or reset if needed.';
                 errorEl.style.display = 'block';
             }
             return;
         }
 
-        const confirm = document.getElementById('admin-modal-confirm').value;
-        if (pwd !== confirm) {
+        if (adminMode === 'signup') {
+            const pwd = document.getElementById('admin-modal-pwd').value;
+            const confirm = document.getElementById('admin-modal-confirm').value;
+            if (pwd !== confirm) {
+                if (errorEl) {
+                    errorEl.textContent = 'Passwords must match';
+                    errorEl.style.display = 'block';
+                }
+                return;
+            }
+
+            const res = await fetch('/api/password', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({pwd})
+            });
+
+            if (res.ok) {
+                window.location.href = '/admin.html';
+                return;
+            }
+
+            if (res.status === 403) {
+                if (errorEl) {
+                    errorEl.textContent = 'Password already exists. Use login or reset password.';
+                    errorEl.style.display = 'block';
+                }
+                return;
+            }
+
             if (errorEl) {
-                errorEl.textContent = 'Passwords must match';
+                errorEl.textContent = 'Failed to set password. Please try again.';
                 errorEl.style.display = 'block';
             }
             return;
         }
 
-        const res = await fetch('/api/password', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({pwd})
-        });
+        if (adminMode === 'reset') {
+            const current = document.getElementById('admin-modal-current').value;
+            const pwd = document.getElementById('admin-modal-pwd').value;
+            const confirm = document.getElementById('admin-modal-confirm').value;
 
-        if (res.ok) {
-            window.location.href = '/admin.html';
+            if (pwd !== confirm) {
+                if (errorEl) {
+                    errorEl.textContent = 'New passwords must match';
+                    errorEl.style.display = 'block';
+                }
+                return;
+            }
+
+            // verify current password first
+            const loginRes = await fetch('/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({pwd: current})
+            });
+
+            if (!loginRes.ok) {
+                if (errorEl) {
+                    errorEl.textContent = 'Current password incorrect.';
+                    errorEl.style.display = 'block';
+                }
+                return;
+            }
+
+            const resetRes = await fetch('/api/password', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({pwd})
+            });
+
+            if (resetRes.ok) {
+                window.location.href = '/admin.html';
+                return;
+            }
+
+            if (errorEl) {
+                errorEl.textContent = 'Failed to reset password. Please try again later.';
+                errorEl.style.display = 'block';
+            }
             return;
-        }
-
-        if (errorEl) {
-            errorEl.textContent = 'Failed to set password. Please try again.';
-            errorEl.style.display = 'block';
         }
     };
 }
