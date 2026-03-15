@@ -9,6 +9,7 @@ const PORT = process.env.PORT || 3000;
 
 // password storage (use /tmp for Vercel serverless compatibility)
 const PASS_FILE = '/tmp/admin_password.txt';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com';
 
 // simple in-memory user logic replaced by file-based password
 function checkPassword(pwd) {
@@ -57,6 +58,34 @@ app.get('/api/status', (req,res)=>{
         authenticated: !!req.session.authenticated,
         exists: fs.existsSync(PASS_FILE)
     });
+});
+
+app.post('/api/google-login', async (req,res) => {
+    const {credential} = req.body;
+    if (!credential) return res.status(400).json({error:'Missing credential'});
+
+    try {
+        const tokenInfoRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`);
+        if (!tokenInfoRes.ok) return res.status(401).json({error:'Invalid Google token'});
+
+        const tokenInfo = await tokenInfoRes.json();
+        if (tokenInfo.aud !== GOOGLE_CLIENT_ID) {
+            return res.status(401).json({error:'Audience mismatch'});
+        }
+
+        const verified = tokenInfo.email_verified === 'true' || tokenInfo.email_verified === true;
+        if (!verified) return res.status(401).json({error:'Google account email not verified'});
+
+        // optional: restrict to one admin email
+        // const allowedEmails = ['your-email@example.com'];
+        // if (!allowedEmails.includes(tokenInfo.email)) return res.status(403).json({error:'Email not allowed'});
+
+        req.session.authenticated = true;
+        res.sendStatus(200);
+    } catch (e) {
+        console.error('Google login error', e);
+        res.status(500).json({error:'Google login failed'});
+    }
 });
 
 // set initial password (only allowed when none exists or authenticated)

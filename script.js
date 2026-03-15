@@ -407,16 +407,39 @@ function initializeGoogleAuth() {
 
     google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
-        callback: response => {
-            if (response && response.credential) {
-                localStorage.setItem('adminGoogleToken', response.credential);
-                window.location.href = '/admin.html';
-            } else {
-                const err = document.getElementById('admin-modal-error');
+        callback: async response => {
+            const err = document.getElementById('admin-modal-error');
+            if (!response || !response.credential) {
                 if (err) {
                     err.textContent = 'Google authentication failed. Please try again.';
                     err.style.display = 'block';
                 }
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/google-login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({credential: response.credential})
+                });
+
+                if (res.ok) {
+                    window.location.href = '/admin.html';
+                    return;
+                }
+
+                const body = await res.json().catch(() => ({}));
+                if (err) {
+                    err.textContent = body.error || 'Google login failed, please try again.';
+                    err.style.display = 'block';
+                }
+            } catch (e) {
+                if (err) {
+                    err.textContent = 'Server error during Google login. Try again later.';
+                    err.style.display = 'block';
+                }
+                console.error('Google login error', e);
             }
         },
         auto_select: false,
