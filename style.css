@@ -356,16 +356,15 @@ input, textarea { font-family: inherit; border: none; outline: none; }
     background: #f7f8fb;
 }
 .admin-modal .btn-google:before {
-    content: 'G';
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: linear-gradient(45deg, #4285F4, #34A853, #FBBC05, #EA4335);
-    color: #fff;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    content: '';
+    width: 18px;
+    height: 18px;
+    border-radius: 2px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath fill='%234285F4' d='M17.64 9.2045c0-.6125-.055-1.2045-.158-1.7775H9v3.366h4.844c-.208 1.12-.84 2.07-1.794 2.712v2.256h2.904c1.7-1.566 2.68-3.866 2.68-6.556z'/%3E%3Cpath fill='%2334A853' d='M9 18c2.43 0 4.466-.8 5.955-2.166l-2.904-2.256c-.81.544-1.85.868-3.051.868-2.346 0-4.335-1.584-5.042-3.72H.993v2.34C2.461 15.934 5.518 18 9 18z'/%3E%3Cpath fill='%23FBBC05' d='M3.958 10.7265c-.18-.544-.282-1.1265-.282-1.7265s.102-1.182.282-1.7265V4.9335H.9945C.3615 6.31 0 7.89 0 9.5s.3615 3.19.9945 4.566h2.9635z'/%3E%3Cpath fill='%23EA4335' d='M9 3.58c1.326 0 2.52.443 3.458 1.3125l2.59-2.59C13.46.844 11.427 0 9 0 5.518 0 2.461 2.0665.9945 4.9335l2.9635 2.34C4.665 5.163 6.654 3.58 9 3.58z'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin-right: 10px;
 }
 .admin-modal .modal-divider {
     text-align: center;
