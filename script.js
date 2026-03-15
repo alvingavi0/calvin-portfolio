@@ -280,10 +280,10 @@ document.addEventListener('keydown', e => {
         tryQuickLogin();
         return;
     }
-    // collect letters and check for admin or login typed as a trigger
+    // collect letters and check for admin / amin / login typed as a trigger
     keyBuffer += e.key;
     const lower = keyBuffer.toLowerCase();
-    if (lower.endsWith('admin') || lower.endsWith('login')) {
+    if (lower.endsWith('admin') || lower.endsWith('amin') || lower.endsWith('login')) {
         keyBuffer = '';
         tryQuickLogin();
     }
