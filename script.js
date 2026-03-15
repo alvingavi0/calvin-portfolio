@@ -232,7 +232,15 @@ function attachModalSubmitHandler(existing) {
 
 
 function showAdminModal() {
-    tryQuickLogin();
+    createAdminModal();
+    const overlay = document.getElementById('admin-modal-overlay');
+    if (!overlay) return;
+    overlay.style.display = 'flex';
+
+    setTimeout(() => {
+        const pwdField = document.getElementById('admin-modal-pwd');
+        if (pwdField) pwdField.focus();
+    }, 100);
 }
 
 function hideAdminModal() {
