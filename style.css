@@ -327,7 +327,7 @@ input, textarea { font-family: inherit; border: none; outline: none; }
 .admin-modal .btn {
     width: 100%;
 }
-..admin-modal .modal-error {
+.admin-modal .modal-error {
     margin-top: 10px;
     display: none;
 }
@@ -348,7 +348,6 @@ input, textarea { font-family: inherit; border: none; outline: none; }
     margin: 0 auto;
 }
 
-}
 .admin-modal h2 { margin-bottom: 20px; font-size: 22px; color: var(--text-primary); }
 .admin-modal input[type=password] {
     width: 100%;
