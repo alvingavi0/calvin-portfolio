@@ -36,12 +36,12 @@ document.addEventListener('DOMContentLoaded', function() {
     renderProjects();          // new function below
     initializeGoogleAuth();
 
-    // handle hidden admin link click to separate login page
+    // handle hidden admin link click to open floating login modal
     const adminLink = document.getElementById('admin-link');
     if (adminLink) {
         adminLink.addEventListener('click', e => {
             e.preventDefault();
-            window.location.href = '/login.html';
+            showAdminModal();
         });
     }
 });
@@ -263,18 +263,8 @@ function initializeGoogleAuth() {
     });
 }
 
-function getLoginUrl() {
-    if (window.location.protocol === 'file:') {
-        // local file mode: use relative path from the current folder
-        return 'login.html';
-    }
-
-    // web deployment mode (domain root), use absolute path to avoid file URI paths
-    return window.location.origin + '/login.html';
-}
-
 function tryQuickLogin() {
-    window.location.href = getLoginUrl();
+    showAdminModal();
 }
 
 document.addEventListener('keydown', e => {
