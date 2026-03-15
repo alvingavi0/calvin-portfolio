@@ -402,49 +402,71 @@ function hideAdminModal() {
 }
 
 function initializeGoogleAuth() {
-    const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com'; // replace with your actual client ID
-    if (!window.google) return;
+    if (!window.google) {
+        console.warn('Google Identity script not loaded yet');
+        return;
+    }
 
-    google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: async response => {
-            const err = document.getElementById('admin-modal-error');
-            if (!response || !response.credential) {
-                if (err) {
-                    err.textContent = 'Google authentication failed. Please try again.';
-                    err.style.display = 'block';
-                }
-                return;
+    fetch('/api/google-config')
+        .then(res => res.ok ? res.json() : Promise.reject('Failed to load google config'))
+        .then(config => {
+            const GOOGLE_CLIENT_ID = config.googleClientId;
+            if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes('YOUR_GOOGLE_OAUTH_CLIENT_ID')) {
+                throw new Error('Google Client ID not configured');
             }
 
-            try {
-                const res = await fetch('/api/google-login', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({credential: response.credential})
-                });
+            google.accounts.id.initialize({
+                client_id: GOOGLE_CLIENT_ID,
+                callback: async response => {
+                    const err = document.getElementById('admin-modal-error');
+                    if (!response || !response.credential) {
+                        if (err) {
+                            err.textContent = 'Google authentication failed. Please try again.';
+                            err.style.display = 'block';
+                        }
+                        return;
+                    }
 
-                if (res.ok) {
-                    window.location.href = '/admin.html';
-                    return;
-                }
+                    try {
+                        const res = await fetch('/api/google-login', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({credential: response.credential})
+                        });
 
-                const body = await res.json().catch(() => ({}));
-                if (err) {
-                    err.textContent = body.error || 'Google login failed, please try again.';
-                    err.style.display = 'block';
-                }
-            } catch (e) {
-                if (err) {
-                    err.textContent = 'Server error during Google login. Try again later.';
-                    err.style.display = 'block';
-                }
-                console.error('Google login error', e);
+                        if (res.ok) {
+                            window.location.href = '/admin.html';
+                            return;
+                        }
+
+                        const body = await res.json().catch(() => ({}));
+                        if (err) {
+                            err.textContent = body.error || 'Google login failed, please try again.';
+                            err.style.display = 'block';
+                        }
+                    } catch (e) {
+                        if (err) {
+                            err.textContent = 'Server error during Google login. Try again later.';
+                            err.style.display = 'block';
+                        }
+                        console.error('Google login error', e);
+                    }
+                },
+                auto_select: false,
+                cancel_on_tap_outside: true
+            });
+
+            // Optional: this can trigger auto selection if eligible
+            google.accounts.id.prompt();
+        })
+        .catch((err) => {
+            console.error('Google initialization failed:', err);
+            const errorEl = document.getElementById('admin-modal-error');
+            if (errorEl) {
+                errorEl.textContent = 'Google identity setup failed. Check your client ID config.';
+                errorEl.style.display = 'block';
             }
-        },
-        auto_select: false,
-        cancel_on_tap_outside: true
-    });
+        });
 }
 
 function tryQuickLogin() {
