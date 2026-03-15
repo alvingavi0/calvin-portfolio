@@ -123,8 +123,370 @@ async function loadContactInfo() {
 
 loadContactInfo();
 
-// Old hidden admin login code removed in favor of fresh system:
-// fresh-index.html + fresh-admin-login.js + fresh-admin-dashboard.html + fresh-dashboard.js
+// hidden admin access: type 'admin' or press ctrl+shift+a to attempt quick login
+let keyBuffer = '';
+let adminMode = 'login'; // login or signup
+
+// modal helper --------------------------------------------------------------
+function createAdminModal() {
+    if (document.getElementById('admin-modal-overlay')) return; // already added
+    const overlay = document.createElement('div');
+    overlay.id = 'admin-modal-overlay';
+    overlay.className = 'admin-modal-overlay';
+
+    const modal = document.createElement('div');
+    modal.className = 'admin-modal';
+    modal.innerHTML = `
+        <button class="modal-close" aria-label="Close">×</button>
+        <h2 id="admin-modal-title">Admin Login</h2>
+        <p class="modal-info" id="admin-modal-info">Checking admin status...</p>
+        <form id="admin-modal-form">
+            <input type="password" id="admin-modal-pwd" placeholder="Password" required autofocus />
+            <button type="submit" class="btn btn-primary">Login</button>
+            <div class="modal-divider">or</div>
+            <button type="button" id="google-auth-btn" class="btn btn-google">Continue with Google</button>
+        </form>
+        <p class="modal-error" id="admin-modal-error">Invalid password</p>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // cancel/close handler
+    modal.querySelector('.modal-close').addEventListener('click', hideAdminModal);
+    overlay.addEventListener('click', e => {
+        if (e.target === overlay) hideAdminModal();
+    });
+
+    function renderAuthForm(exists) {
+        const form = document.getElementById('admin-modal-form');
+        const title = document.getElementById('admin-modal-title');
+        const info = document.getElementById('admin-modal-info');
+        const error = document.getElementById('admin-modal-error');
+
+        if (error) {
+            error.style.display = 'none';
+            error.textContent = 'Invalid password';
+        }
+
+        if (exists) {
+            adminMode = 'login';
+            title.textContent = 'Admin Login';
+            if (info) info.textContent = 'Enter your existing admin password to continue.';
+            form.innerHTML = `
+                <input type="password" id="admin-modal-pwd" placeholder="Password" required autofocus />
+                <button type="submit" class="btn btn-primary">Login</button>
+                <div class="modal-divider">or</div>
+                <button type="button" id="google-auth-btn" class="btn btn-google">Continue with Google</button>
+                <button type="button" id="admin-switch-mode" class="btn btn-outline">Reset / Change password</button>
+            `;
+        } else {
+            adminMode = 'signup';
+            title.textContent = 'Create Admin Password';
+            if (info) info.textContent = 'No admin password set currently. Create one and you will be logged in automatically.';
+            form.innerHTML = `
+                <input type="password" id="admin-modal-pwd" placeholder="Password" required autofocus />
+                <input type="password" id="admin-modal-confirm" placeholder="Confirm password" required />
+                <button type="submit" class="btn btn-primary">Create</button>
+                <div class="modal-divider">or</div>
+                <button type="button" id="google-auth-btn" class="btn btn-google">Continue with Google</button>
+            `;
+        }
+
+        attachModalSubmitHandler();
+        attachGoogleButton();
+
+        const switchBtn = document.getElementById('admin-switch-mode');
+        if (switchBtn) {
+            switchBtn.addEventListener('click', () => renderResetForm());
+        }
+    }
+
+    function renderResetForm() {
+        adminMode = 'reset';
+        const form = document.getElementById('admin-modal-form');
+        const title = document.getElementById('admin-modal-title');
+        const info = document.getElementById('admin-modal-info');
+        const error = document.getElementById('admin-modal-error');
+
+        if (error) {
+            error.style.display = 'none';
+            error.textContent = 'Invalid password';
+        }
+
+        title.textContent = 'Reset Admin Password';
+        if (info) info.textContent = 'Enter current password and new password to update.';
+        form.innerHTML = `
+            <input type="password" id="admin-modal-current" placeholder="Current password" required autofocus />
+            <input type="password" id="admin-modal-pwd" placeholder="New password" required />
+            <input type="password" id="admin-modal-confirm" placeholder="Confirm new password" required />
+            <button type="submit" class="btn btn-primary">Reset password</button>
+            <div class="modal-divider">or</div>
+            <button type="button" id="google-auth-btn" class="btn btn-google">Continue with Google</button>
+            <button type="button" id="admin-switch-mode" class="btn btn-outline">Back to login</button>
+        `;
+
+        attachModalSubmitHandler();
+        attachGoogleButton();
+
+        const switchBtn = document.getElementById('admin-switch-mode');
+        if (switchBtn) {
+            switchBtn.addEventListener('click', () => renderAuthForm(true));
+        }
+    }
+
+    function attachGoogleButton() {
+        const googleBtn = document.getElementById('google-auth-btn');
+        if (googleBtn) {
+            googleBtn.addEventListener('click', () => {
+                if (window.google) {
+                    google.accounts.id.prompt();
+                } else {
+                    alert('Google Identity Services is not loaded yet. Please reload the page and try again.');
+                }
+            });
+        }
+    }
+
+    // default content while checking password endpoint
+    renderAuthForm(true);
+
+    fetch('/api/password')
+        .then(r => r.ok ? r.json() : {exists: true})
+        .then(({exists}) => renderAuthForm(Boolean(exists)))
+        .catch(() => renderAuthForm(true));
+
+    // allow escape key
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && overlay.style.display==='flex') hideAdminModal();
+    });
+}
+
+// separate handler attachment so we can change behaviour
+function attachModalSubmitHandler() {
+    const form = document.getElementById('admin-modal-form');
+    form.onsubmit = async e => {
+        e.preventDefault();
+
+        const errorEl = document.getElementById('admin-modal-error');
+        if (errorEl) {
+            errorEl.style.display = 'none';
+            errorEl.textContent = 'Invalid password';
+        }
+
+        if (adminMode === 'login') {
+            const pwd = document.getElementById('admin-modal-pwd').value;
+            const res = await fetch('/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({pwd})
+            });
+
+            if (res.ok) {
+                window.location.href = '/admin.html';
+                return;
+            }
+
+            if (errorEl) {
+                errorEl.textContent = 'Wrong password. Please try again or reset if needed.';
+                errorEl.style.display = 'block';
+            }
+            return;
+        }
+
+        if (adminMode === 'signup') {
+            const pwd = document.getElementById('admin-modal-pwd').value;
+            const confirm = document.getElementById('admin-modal-confirm').value;
+            if (pwd !== confirm) {
+                if (errorEl) {
+                    errorEl.textContent = 'Passwords must match';
+                    errorEl.style.display = 'block';
+                }
+                return;
+            }
+
+            const res = await fetch('/api/password', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({pwd})
+            });
+
+            if (res.ok) {
+                // After first-time creation, switch to login mode instead of instant admin redirect.
+                renderAuthForm(true);
+                if (document.getElementById('admin-modal-info')) {
+                    document.getElementById('admin-modal-info').textContent = 'Password created! Please login with your new password.';
+                }
+                return;
+            }
+
+            if (res.status === 403) {
+                if (errorEl) {
+                    errorEl.textContent = 'Password already exists. Use login or reset password.';
+                    errorEl.style.display = 'block';
+                }
+                return;
+            }
+
+            if (errorEl) {
+                errorEl.textContent = 'Failed to set password. Please try again.';
+                errorEl.style.display = 'block';
+            }
+            return;
+        }
+
+        if (adminMode === 'reset') {
+            const current = document.getElementById('admin-modal-current').value;
+            const pwd = document.getElementById('admin-modal-pwd').value;
+            const confirm = document.getElementById('admin-modal-confirm').value;
+
+            if (pwd !== confirm) {
+                if (errorEl) {
+                    errorEl.textContent = 'New passwords must match';
+                    errorEl.style.display = 'block';
+                }
+                return;
+            }
+
+            // verify current password first
+            const loginRes = await fetch('/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({pwd: current})
+            });
+
+            if (!loginRes.ok) {
+                if (errorEl) {
+                    errorEl.textContent = 'Current password incorrect.';
+                    errorEl.style.display = 'block';
+                }
+                return;
+            }
+
+            const resetRes = await fetch('/api/password', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({pwd})
+            });
+
+            if (resetRes.ok) {
+                window.location.href = '/admin.html';
+                return;
+            }
+
+            if (errorEl) {
+                errorEl.textContent = 'Failed to reset password. Please try again later.';
+                errorEl.style.display = 'block';
+            }
+            return;
+        }
+    };
+}
+
+
+function showAdminModal() {
+    createAdminModal();
+    const overlay = document.getElementById('admin-modal-overlay');
+    if (!overlay) return;
+    overlay.style.display = 'flex';
+
+    setTimeout(() => {
+        const pwdField = document.getElementById('admin-modal-pwd');
+        if (pwdField) pwdField.focus();
+    }, 100);
+}
+
+function hideAdminModal() {
+    const overlay = document.getElementById('admin-modal-overlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+function initializeGoogleAuth() {
+    if (!window.google) {
+        console.warn('Google Identity script not loaded yet');
+        return;
+    }
+
+    fetch('/api/google-config')
+        .then(res => res.ok ? res.json() : Promise.reject('Failed to load google config'))
+        .then(config => {
+            const GOOGLE_CLIENT_ID = config.googleClientId;
+            if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes('YOUR_GOOGLE_OAUTH_CLIENT_ID')) {
+                throw new Error('Google Client ID not configured');
+            }
+
+            google.accounts.id.initialize({
+                client_id: GOOGLE_CLIENT_ID,
+                callback: async response => {
+                    const err = document.getElementById('admin-modal-error');
+                    if (!response || !response.credential) {
+                        if (err) {
+                            err.textContent = 'Google authentication failed. Please try again.';
+                            err.style.display = 'block';
+                        }
+                        return;
+                    }
+
+                    try {
+                        const res = await fetch('/api/google-login', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({credential: response.credential})
+                        });
+
+                        if (res.ok) {
+                            window.location.href = '/admin.html';
+                            return;
+                        }
+
+                        const body = await res.json().catch(() => ({}));
+                        if (err) {
+                            err.textContent = body.error || 'Google login failed, please try again.';
+                            err.style.display = 'block';
+                        }
+                    } catch (e) {
+                        if (err) {
+                            err.textContent = 'Server error during Google login. Try again later.';
+                            err.style.display = 'block';
+                        }
+                        console.error('Google login error', e);
+                    }
+                },
+                auto_select: false,
+                cancel_on_tap_outside: true
+            });
+
+            // Optional: this can trigger auto selection if eligible
+            google.accounts.id.prompt();
+        })
+        .catch((err) => {
+            console.error('Google initialization failed:', err);
+            const errorEl = document.getElementById('admin-modal-error');
+            if (errorEl) {
+                errorEl.textContent = 'Google identity setup failed. Check your client ID config.';
+                errorEl.style.display = 'block';
+            }
+        });
+}
+
+function tryQuickLogin() {
+    showAdminModal();
+}
+
+document.addEventListener('keydown', e => {
+    if (e.ctrlKey && e.shiftKey && e.key.toLowerCase()==='a') {
+        tryQuickLogin();
+        return;
+    }
+    // collect letters and check for admin / amin / login typed as a trigger
+    keyBuffer += e.key;
+    const lower = keyBuffer.toLowerCase();
+    if (lower.endsWith('admin') || lower.endsWith('amin') || lower.endsWith('login')) {
+        keyBuffer = '';
+        tryQuickLogin();
+    }
+    if (keyBuffer.length > 12) keyBuffer = keyBuffer.slice(-12);
+});
 
 // subtle parallax for hero background shapes
 const hero = document.querySelector('.hero');
