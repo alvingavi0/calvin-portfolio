@@ -139,7 +139,10 @@ function createAdminModal() {
         <button class="modal-close" aria-label="Close">×</button>
         <h2 id="admin-modal-title">Admin Login</h2>
         <form id="admin-modal-form">
-            <!-- inputs inserted dynamically -->
+            <input type="password" id="admin-modal-pwd" placeholder="Password" required autofocus />
+            <button type="submit" class="btn btn-primary">Login</button>
+            <div class="modal-divider">or</div>
+            <button type="button" id="google-auth-btn" class="btn btn-google">Continue with Google</button>
         </form>
         <p class="modal-error" id="admin-modal-error">Invalid password</p>
     `;
@@ -153,28 +156,33 @@ function createAdminModal() {
         if (e.target === overlay) hideAdminModal();
     });
 
-    // fetch password existence and build form accordingly
-    fetch('/api/password').then(r => r.json()).then(({exists}) => {
+    function renderAuthForm(exists) {
         const form = document.getElementById('admin-modal-form');
+        const title = document.getElementById('admin-modal-title');
+
         if (exists) {
+            title.textContent = 'Admin Login';
             form.innerHTML = `
                 <input type="password" id="admin-modal-pwd" placeholder="Password" required autofocus />
-                <button type="submit" class="btn btn-primary">Submit</button>
+                <button type="submit" class="btn btn-primary">Login</button>
                 <div class="modal-divider">or</div>
-                <button type="button" id="google-auth-btn" class="btn btn-google">Sign in with Google</button>
+                <button type="button" id="google-auth-btn" class="btn btn-google">Continue with Google</button>
             `;
         } else {
-            document.getElementById('admin-modal-title').textContent = 'Set Admin Password';
+            title.textContent = 'Create Admin Password';
             form.innerHTML = `
                 <input type="password" id="admin-modal-pwd" placeholder="Password" required autofocus />
-                <input type="password" id="admin-modal-confirm" placeholder="Confirm" required />
+                <input type="password" id="admin-modal-confirm" placeholder="Confirm password" required />
                 <button type="submit" class="btn btn-primary">Create</button>
                 <div class="modal-divider">or</div>
-                <button type="button" id="google-auth-btn" class="btn btn-google">Sign up with Google</button>
+                <button type="button" id="google-auth-btn" class="btn btn-google">Continue with Google</button>
             `;
         }
         attachModalSubmitHandler(exists);
+        attachGoogleButton();
+    }
 
+    function attachGoogleButton() {
         const googleBtn = document.getElementById('google-auth-btn');
         if (googleBtn) {
             googleBtn.addEventListener('click', () => {
@@ -185,7 +193,16 @@ function createAdminModal() {
                 }
             });
         }
-    }).catch(console.error);
+    }
+
+    // default content while checking password endpoint
+    renderAuthForm(true);
+
+    fetch('/api/password')
+        .then(r => r.ok ? r.json() : {exists: true})
+        .then(({exists}) => renderAuthForm(Boolean(exists)))
+        .catch(() => renderAuthForm(true));
+
     // allow escape key
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape' && overlay.style.display==='flex') hideAdminModal();
