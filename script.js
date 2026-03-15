@@ -264,8 +264,13 @@ function initializeGoogleAuth() {
 }
 
 function getLoginUrl() {
-    if (window.location.protocol === 'file:') return 'login.html';
-    return '/login.html';
+    if (window.location.protocol === 'file:') {
+        // local file mode: use relative path from the current folder
+        return 'login.html';
+    }
+
+    // web deployment mode (domain root), use absolute path to avoid file URI paths
+    return window.location.origin + '/login.html';
 }
 
 function tryQuickLogin() {
