@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Fresh Portfolio Home</title>
   <link rel="stylesheet" href="style.css" />
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <header class="site-header">
@@ -20,21 +19,7 @@
     </section>
   </main>
 
-  <div id="fresh-admin-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="fresh-admin-title">
-    <div class="modal">
-      <button id="fresh-admin-close" class="modal-close" aria-label="Close">×</button>
-      <h2 id="fresh-admin-title">Admin Login</h2>
-      <p id="fresh-admin-info">Sign in with Google to access the admin dashboard.</p>
+  <div id="fresh-admin-modal" class="fresh-modal-overlay hidden"></div>
 
-      <button id="fresh-google-signin" class="btn btn-google">
-        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" width="20" />
-        Continue with Google
-      </button>
-
-      <p id="fresh-admin-error" class="error hidden"></p>
-    </div>
-  </div>
-
-  <script src="fresh-admin-login.js"></script>
 </body>
 </html>
