@@ -7,25 +7,10 @@ const multer = require('multer');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// password storage (use /tmp for Vercel serverless compatibility)
-const PASS_FILE = '/tmp/admin_password.txt';
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '454858553626-rfivpo10lb79anb7ft4mc4ig11h8ab5d.apps.googleusercontent.com';
 
 // Restrict only this specific Google account email to login as admin
-const ALLOWED_ADMIN_EMAIL = process.env.ALLOWED_ADMIN_EMAIL || 'your-email@example.com';
-
-// simple in-memory user logic replaced by file-based password
-function checkPassword(pwd) {
-    if (fs.existsSync(PASS_FILE)) {
-        const stored = fs.readFileSync(PASS_FILE,'utf8').trim();
-        return pwd === stored;
-    }
-    return false;
-}
-
-function setPassword(pwd) {
-    fs.writeFileSync(PASS_FILE,pwd);
-}
+const ALLOWED_ADMIN_EMAIL = process.env.ALLOWED_ADMIN_EMAIL || 'wanyamacalvinotieno254@gmail.com';
 
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
@@ -39,16 +24,6 @@ function requireAuth(req,res,next) {
     if (req.session && req.session.authenticated) return next();
     res.status(401).send('Unauthorized');
 }
-
-app.post('/login', (req,res)=>{
-    const {pwd} = req.body;
-    if (checkPassword(pwd)) {
-        req.session.authenticated = true;
-        res.sendStatus(200);
-    } else {
-        res.sendStatus(401);
-    }
-});
 
 // fresh admin auth check endpoint
 app.get('/api/fresh-admin-status', (req,res)=>{
@@ -91,67 +66,7 @@ app.get('/fresh-logout', (req,res)=>{
     req.session.destroy(()=>res.redirect('/fresh-index.html'));
 });
 
-// endpoint to check whether password exists
-app.get('/api/password', (req,res)=>{
-    res.json({exists: fs.existsSync(PASS_FILE)});
-});
 
-// endpoint to report authentication + password state
-app.get('/api/status', (req,res)=>{
-    res.json({
-        authenticated: !!req.session.authenticated,
-        exists: fs.existsSync(PASS_FILE)
-    });
-});
-
-// endpoint to provide client ID for Google Identity on public JS
-app.get('/api/google-config', (req,res)=>{
-    res.json({ googleClientId: GOOGLE_CLIENT_ID });
-});
-
-app.post('/api/google-login', async (req,res) => {
-    const {credential} = req.body;
-    if (!credential) return res.status(400).json({error:'Missing credential'});
-
-    try {
-        const tokenInfoRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`);
-        if (!tokenInfoRes.ok) return res.status(401).json({error:'Invalid Google token'});
-
-        const tokenInfo = await tokenInfoRes.json();
-        if (tokenInfo.aud !== GOOGLE_CLIENT_ID) {
-            return res.status(401).json({error:'Audience mismatch'});
-        }
-
-        const verified = tokenInfo.email_verified === 'true' || tokenInfo.email_verified === true;
-        if (!verified) return res.status(401).json({error:'Google account email not verified'});
-
-        if (!tokenInfo.email || tokenInfo.email.toLowerCase() !== ALLOWED_ADMIN_EMAIL.toLowerCase()) {
-            return res.status(403).json({error:'Email not allowed'});
-        }
-
-        req.session.authenticated = true;
-        res.sendStatus(200);
-    } catch (e) {
-        console.error('Google login error', e);
-        res.status(500).json({error:'Google login failed'});
-    }
-});
-
-// set initial password (only allowed when none exists or authenticated)
-app.post('/api/password', (req,res)=>{
-    const {pwd} = req.body;
-    if (!fs.existsSync(PASS_FILE) || req.session.authenticated) {
-        setPassword(pwd);
-        req.session.authenticated = true; // log in after setting
-        res.sendStatus(200);
-    } else {
-        res.sendStatus(403);
-    }
-});
-
-app.get('/logout', (req,res)=>{
-    req.session.destroy(()=>res.redirect('/admin.html'));
-});
 
 // contact CRUD
 app.get('/api/contact', (req,res)=>{
