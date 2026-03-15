@@ -11,6 +11,9 @@ const PORT = process.env.PORT || 3000;
 const PASS_FILE = '/tmp/admin_password.txt';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com';
 
+// Restrict only this specific Google account email to login as admin
+const ALLOWED_ADMIN_EMAIL = process.env.ALLOWED_ADMIN_EMAIL || 'your-email@example.com';
+
 // simple in-memory user logic replaced by file-based password
 function checkPassword(pwd) {
     if (fs.existsSync(PASS_FILE)) {
@@ -76,9 +79,9 @@ app.post('/api/google-login', async (req,res) => {
         const verified = tokenInfo.email_verified === 'true' || tokenInfo.email_verified === true;
         if (!verified) return res.status(401).json({error:'Google account email not verified'});
 
-        // optional: restrict to one admin email
-        // const allowedEmails = ['your-email@example.com'];
-        // if (!allowedEmails.includes(tokenInfo.email)) return res.status(403).json({error:'Email not allowed'});
+        if (!tokenInfo.email || tokenInfo.email.toLowerCase() !== ALLOWED_ADMIN_EMAIL.toLowerCase()) {
+            return res.status(403).json({error:'Email not allowed'});
+        }
 
         req.session.authenticated = true;
         res.sendStatus(200);
