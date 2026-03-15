@@ -1,0 +1,26 @@
+[
+  {
+    "name": "E-Commerce Platform",
+    "type": "Full‑stack web app",
+    "description": "Online store with shopping cart, payment integration, and admin dashboard.",
+    "repo": "https://github.com/yourusername/ecommerce-platform",
+    "live": "https://ecommerce.example.com",
+    "status": "live"
+  },
+  {
+    "name": "Task Management App",
+    "type": "Productivity",
+    "description": "A productivity application for managing tasks, deadlines, and team collaboration.",
+    "repo": "https://github.com/yourusername/task-manager",
+    "live": null,
+    "status": "development"
+  },
+  {
+    "name": "Analytics Dashboard",
+    "type": "Data visualization",
+    "description": "Real-time dashboard with interactive charts and reporting tools.",
+    "repo": "https://github.com/yourusername/analytics-dashboard",
+    "live": "https://analytics.example.com",
+    "status": "live"
+  }
+]

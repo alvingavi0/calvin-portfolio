@@ -1,0 +1,183 @@
+alvingavi0<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin login</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* login/dashboard layout is handled by global styles */
+        /* body centering only for admin page */
+        body.admin-page { /* already defined in style.css */ }
+        .admin-dashboard { /* visibility toggled by JS */ }
+        .hidden { display:none; }
+    </style>
+</head>
+<body class="admin-page">
+    <div id="login-container" class="admin-card">
+        <form id="create-form" style="display:none;">
+            <h2 class="section-title">Set Admin Password</h2>
+            <div class="form-group">
+                <label for="newpwd">Password</label>
+                <input type="password" id="newpwd" required>
+            </div>
+            <div class="form-group">
+                <label for="confirm">Confirm</label>
+                <input type="password" id="confirm" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Create</button>
+            <p id="create-error" style="color:red;display:none;">Passwords must match</p>
+        </form>
+        <form id="login-form" style="display:none;">
+            <h2 class="section-title">Admin Login</h2>
+            <div class="form-group">
+                <label for="pwd">Password</label>
+                <input type="password" id="pwd" name="pwd" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Login</button>
+            <p id="login-error" style="color:red;display:none;">Invalid password</p>
+        </form>
+    </div>
+
+    <div id="dashboard" class="admin-dashboard admin-card" style="display:none;">
+        <h2 class="section-title">Portfolio Admin</h2>
+        <section>
+            <h3>Update Contact Info</h3>
+            <form id="contact-form-admin">
+                <input type="email" id="admin-email" placeholder="Email">
+                <input type="text" id="admin-phone" placeholder="Phone">
+                <input type="text" id="admin-whatsapp" placeholder="WhatsApp URL">
+                <input type="text" id="admin-location" placeholder="Location">
+                <button type="submit" class="btn btn-secondary">Save</button>
+            </form>
+        </section>
+        <section>
+            <h3>Upload CV</h3>
+            <form id="cv-upload" enctype="multipart/form-data">
+                <input type="file" name="cv" accept="application/pdf">
+                <button type="submit" class="btn btn-secondary">Upload</button>
+            </form>
+        </section>
+        <section>
+            <h3>Projects JSON / Folder</h3>
+            <p>Upload a <code>projects.json</code> file or a ZIP archive containing one folder per project. The server will extract names and generate JSON automatically.</p>
+            <form id="projects-upload" enctype="multipart/form-data">
+                <input type="file" name="projects" accept="application/json,application/zip">
+                <button type="submit" class="btn btn-secondary">Upload</button>
+            </form>
+        </section>
+        <section>
+            <h3>Edit About HTML</h3>
+            <textarea id="about-editor" rows="10"></textarea>
+            <button id="about-save" class="btn btn-secondary">Save</button>
+        </section>
+        <button id="logout" class="btn btn-primary" style="margin-top:20px;">Logout</button>
+    </div>
+
+    <script>
+        async function showAppropriateForm() {
+            const res = await fetch('/api/status');
+            const {authenticated, exists} = await res.json();
+            if (authenticated) {
+                // already logged in, go straight to dashboard
+                document.getElementById('login-container').style.display='none';
+                document.getElementById('dashboard').style.display='block';
+                loadAdminData();
+                return;
+            }
+            if (exists) {
+                document.getElementById('login-form').style.display='block';
+            } else {
+                document.getElementById('create-form').style.display='block';
+            }
+        }
+
+        async function createPwd(e) {
+            e.preventDefault();
+            const p1 = document.getElementById('newpwd').value;
+            const p2 = document.getElementById('confirm').value;
+            if (p1 !== p2) {
+                document.getElementById('create-error').style.display='block';
+                return;
+            }
+            const res = await fetch('/api/password', {
+                method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({pwd:p1})
+            });
+            if (res.ok) {
+                document.getElementById('login-container').style.display='none';
+                document.getElementById('dashboard').style.display='block';
+                loadAdminData();
+            } else alert('Could not create password');
+        }
+
+        async function login(e) {
+            e.preventDefault();
+            const pwd = e.target.pwd.value;
+            const res = await fetch('/login', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({pwd})
+            });
+            if (res.ok) {
+                document.getElementById('login-container').style.display='none';
+                document.getElementById('dashboard').style.display='block';
+                loadAdminData();
+            } else {
+                document.getElementById('login-error').style.display='block';
+            }
+        }
+        document.getElementById('login-form').addEventListener('submit', login);
+        document.getElementById('create-form').addEventListener('submit', createPwd);
+
+        async function loadAdminData() {
+            // load contact
+            const info = await fetch('/api/contact').then(r=>r.json());
+            document.getElementById('admin-email').value = info.email;
+            document.getElementById('admin-phone').value = info.phone;
+            document.getElementById('admin-whatsapp').value = info.whatsapp;
+            document.getElementById('admin-location').value = info.location;
+            // load about page HTML
+            const about = await fetch('about.html').then(r=>r.text());
+            document.getElementById('about-editor').value = about;
+        }
+        // remaining handlers unchanged...
+        document.getElementById('contact-form-admin').addEventListener('submit', async e=>{
+            e.preventDefault();
+            const payload = {
+                email: document.getElementById('admin-email').value,
+                phone: document.getElementById('admin-phone').value,
+                whatsapp: document.getElementById('admin-whatsapp').value,
+                location: document.getElementById('admin-location').value
+            };
+            await fetch('/api/contact', {
+                method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+            });
+            alert('Contact updated');
+        });
+        document.getElementById('cv-upload').addEventListener('submit', async e=>{
+            e.preventDefault();
+            const form = new FormData(e.target);
+            await fetch('/api/upload/cv', {method:'POST', body: form});
+            alert('CV uploaded');
+        });
+        document.getElementById('projects-upload').addEventListener('submit', async e=>{
+            e.preventDefault();
+            const form = new FormData(e.target);
+            await fetch('/api/upload/projects', {method:'POST', body: form});
+            alert('Projects JSON uploaded');
+        });
+        document.getElementById('about-save').addEventListener('click', async ()=>{
+            const html = document.getElementById('about-editor').value;
+            await fetch('/api/about', {method:'POST', headers:{'Content-Type':'text/html'}, body: html});
+            alert('About page saved');
+        });
+        document.getElementById('logout').addEventListener('click', async ()=>{
+            await fetch('/logout');
+            location.reload();
+        });
+
+        // initialize
+        showAppropriateForm();
+    </script>
+</body>
+</html>
