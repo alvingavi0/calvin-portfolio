@@ -138,6 +138,7 @@ function createAdminModal() {
     modal.innerHTML = `
         <button class="modal-close" aria-label="Close">×</button>
         <h2 id="admin-modal-title">Admin Login</h2>
+        <p class="modal-info" id="admin-modal-info">Checking admin status...</p>
         <form id="admin-modal-form">
             <input type="password" id="admin-modal-pwd" placeholder="Password" required autofocus />
             <button type="submit" class="btn btn-primary">Login</button>
@@ -159,9 +160,14 @@ function createAdminModal() {
     function renderAuthForm(exists) {
         const form = document.getElementById('admin-modal-form');
         const title = document.getElementById('admin-modal-title');
+        const info = document.getElementById('admin-modal-info');
+        const error = document.getElementById('admin-modal-error');
+
+        if (error) error.style.display = 'none';
 
         if (exists) {
             title.textContent = 'Admin Login';
+            if (info) info.textContent = 'Enter your existing admin password to continue.';
             form.innerHTML = `
                 <input type="password" id="admin-modal-pwd" placeholder="Password" required autofocus />
                 <button type="submit" class="btn btn-primary">Login</button>
@@ -170,6 +176,7 @@ function createAdminModal() {
             `;
         } else {
             title.textContent = 'Create Admin Password';
+            if (info) info.textContent = 'No admin password set currently. Create one and you will be logged in automatically.';
             form.innerHTML = `
                 <input type="password" id="admin-modal-pwd" placeholder="Password" required autofocus />
                 <input type="password" id="admin-modal-confirm" placeholder="Confirm password" required />
@@ -214,7 +221,15 @@ function attachModalSubmitHandler(existing) {
     const form = document.getElementById('admin-modal-form');
     form.addEventListener('submit', async e => {
         e.preventDefault();
+
+        const errorEl = document.getElementById('admin-modal-error');
+        if (errorEl) {
+            errorEl.style.display = 'none';
+            errorEl.textContent = 'Invalid password';
+        }
+
         const pwd = document.getElementById('admin-modal-pwd').value;
+
         if (existing) {
             const res = await fetch('/login', {
                 method:'POST', headers:{'Content-Type':'application/json'},
@@ -222,27 +237,36 @@ function attachModalSubmitHandler(existing) {
             });
             if (res.ok) {
                 window.location.href = '/admin.html';
-            } else {
-                document.getElementById('admin-modal-error').style.display = 'block';
-            }
-        } else {
-            const confirm = document.getElementById('admin-modal-confirm').value;
-            if (pwd !== confirm) {
-                const err = document.getElementById('admin-modal-error');
-                err.textContent = 'Passwords must match';
-                err.style.display = 'block';
                 return;
             }
-            const res = await fetch('/api/password', {
-                method:'POST', headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({pwd})
-            });
-            if (res.ok) {
-                window.location.href = '/admin.html';
-            } else {
-                document.getElementById('admin-modal-error').textContent = 'Failed to set password';
-                document.getElementById('admin-modal-error').style.display = 'block';
+            if (errorEl) {
+                errorEl.textContent = 'Wrong password. Please try again or create a new one.';
+                errorEl.style.display = 'block';
             }
+            return;
+        }
+
+        const confirm = document.getElementById('admin-modal-confirm').value;
+        if (pwd !== confirm) {
+            if (errorEl) {
+                errorEl.textContent = 'Passwords must match';
+                errorEl.style.display = 'block';
+            }
+            return;
+        }
+
+        const res = await fetch('/api/password', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({pwd})
+        });
+        if (res.ok) {
+            window.location.href = '/admin.html';
+            return;
+        }
+
+        if (errorEl) {
+            errorEl.textContent = 'Failed to set password. Please try again.';
+            errorEl.style.display = 'block';
         }
     });
 }
