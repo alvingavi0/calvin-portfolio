@@ -6,49 +6,86 @@
     <title>Admin Login - Calvin Portfolio</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        body.admin-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .admin-card { max-width: 420px; width: 90%; margin: 24px; }
+        body.admin-page {
+            margin: 0; padding: 0;
+            min-height: 100vh;
+            width: 100vw;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-primary, 'Inter', sans-serif);
+        }
+        .admin-card {
+            width: min(450px, 92%);
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: var(--card-bg, #111);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+            padding: 24px;
+            position: relative;
+            color: var(--text-primary, #fff);
+            animation: pop 0.2s ease;
+        }
+        @keyframes pop {
+            from { transform: translateY(10px) scale(0.98); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        .card-close {
+            position: absolute;
+            right: 12px;
+            top: 12px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary, #aaa);
+            font-size: 22px;
+            cursor: pointer;
+        }
+        .card-close:hover { color: var(--text-primary, #fff); }
+        .admin-card h1 {
+            text-align: center;
+            margin-bottom: 16px;
+            font-size: 24px;
+            color: var(--primary-color, #0dc3ff);
+        }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; margin-bottom: 5px; color: var(--text-secondary, #bbb); }
+        .form-group input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color, #444); background: var(--bg-secondary, #222); color: var(--text-primary, #fff); }
+        .btn { display: inline-flex; justify-content: center; align-items: center; width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: 600; transition: transform .15s ease, opacity .15s ease; }
+        .btn:hover { transform: translateY(-1px); }
+        .btn-primary { background: var(--primary, #0081ff); color: #fff; }
+        .btn-google { background: #fff; color: #222; border: 1px solid #ccc; margin-top: 10px; }
+        .modal-divider { text-align: center; margin: 14px 0; color: var(--text-secondary, #adadad); }
         .hidden { display: none; }
+        .error { color: #ff5f5f; margin-top: 8px; font-size: 0.9rem; display: none; }
     </style>
 </head>
 <body class="admin-page">
-    <main class="admin-card">
-        <h1 style="text-align:center; margin-bottom:1rem; color:var(--primary-color);">Admin Access</h1>
+    <section class="admin-card">
+        <button class="card-close" id="card-close" aria-label="Close">×</button>
+        <h1>Admin Login</h1>
 
         <div id="login-panel">
-            <form id="login-form" class="form-card">
-                <h2>Sign In</h2>
-                <div class="form-group">
-                    <label for="pwd">Password</label>
-                    <input type="password" id="pwd" name="pwd" required>
-                </div>
+            <form id="login-form">
+                <div class="form-group"><label for="pwd">Password</label><input type="password" id="pwd" name="pwd" required></div>
                 <button type="submit" class="btn btn-primary">Login</button>
-                <p id="login-error" style="color:red;display:none; margin-top:.75rem;">Invalid password</p>
+                <p id="login-error" class="error">Invalid password</p>
             </form>
-
             <div class="modal-divider">or</div>
-            <button id="google-login" class="btn btn-google">Continue with Google</button>
+            <button id="google-login" class="btn btn-google" type="button">Continue with Google</button>
         </div>
 
         <div id="create-panel" class="hidden">
-            <form id="create-form" class="form-card">
-                <h2>Create Admin Password</h2>
-                <div class="form-group">
-                    <label for="newpwd">Password</label>
-                    <input type="password" id="newpwd" required>
-                </div>
-                <div class="form-group">
-                    <label for="confirm">Confirm</label>
-                    <input type="password" id="confirm" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Create</button>
-                <p id="create-error" style="color:red;display:none; margin-top:.75rem;">Passwords must match</p>
+            <form id="create-form">
+                <div class="form-group"><label for="newpwd">Password</label><input type="password" id="newpwd" required></div>
+                <div class="form-group"><label for="confirm">Confirm</label><input type="password" id="confirm" required></div>
+                <button type="submit" class="btn btn-primary">Create Password</button>
+                <p id="create-error" class="error">Passwords must match</p>
             </form>
             <div class="modal-divider">or</div>
-            <button id="google-create" class="btn btn-google">Continue with Google</button>
+            <button id="google-create" class="btn btn-google" type="button">Continue with Google</button>
         </div>
-
-    </main>
+    </section>
 
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script>
@@ -60,8 +97,9 @@
                 window.location.href = '/admin.html';
                 return;
             }
-            document.getElementById('login-error').textContent = 'Google authentication failed';
-            document.getElementById('login-error').style.display = 'block';
+            const err = document.getElementById('login-error');
+            err.textContent = 'Google authentication failed';
+            err.style.display = 'block';
         }
 
         function initializeGoogleAuth() {
@@ -77,7 +115,7 @@
 
         function promptGoogleSignIn() {
             if (!window.google || !GOOGLE_CLIENT_ID) {
-                alert('Google auth is not configured. Please set your Google Client ID in login.html.');
+                alert('Google auth is not configured. Please set your Google Client ID.');
                 return;
             }
             google.accounts.id.prompt();
@@ -91,13 +129,14 @@
                     window.location.href = '/admin.html';
                     return;
                 }
-                document.getElementById('login-panel').style.display = 'block';
+                const loginPanel = document.getElementById('login-panel');
+                const createPanel = document.getElementById('create-panel');
                 if (exists) {
-                    document.getElementById('create-panel').classList.add('hidden');
-                    document.getElementById('login-panel').classList.remove('hidden');
+                    loginPanel.classList.remove('hidden');
+                    createPanel.classList.add('hidden');
                 } else {
-                    document.getElementById('create-panel').classList.remove('hidden');
-                    document.getElementById('login-panel').classList.add('hidden');
+                    loginPanel.classList.add('hidden');
+                    createPanel.classList.remove('hidden');
                 }
             } catch (err) {
                 console.error(err);
@@ -111,7 +150,9 @@
             if (res.ok) {
                 window.location.href = '/admin.html';
             } else {
-                document.getElementById('login-error').style.display = 'block';
+                const err = document.getElementById('login-error');
+                err.textContent = 'Invalid password';
+                err.style.display = 'block';
             }
         });
 
@@ -119,21 +160,24 @@
             e.preventDefault();
             const p1 = document.getElementById('newpwd').value;
             const p2 = document.getElementById('confirm').value;
+            const err = document.getElementById('create-error');
             if (p1 !== p2) {
-                document.getElementById('create-error').style.display = 'block';
+                err.textContent = 'Passwords must match';
+                err.style.display = 'block';
                 return;
             }
             const res = await fetch('/api/password', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({pwd:p1}) });
             if (res.ok) {
                 window.location.href = '/admin.html';
             } else {
-                document.getElementById('create-error').textContent = 'Could not create password';
-                document.getElementById('create-error').style.display = 'block';
+                err.textContent = 'Could not create password';
+                err.style.display = 'block';
             }
         });
 
         document.getElementById('google-login').addEventListener('click', promptGoogleSignIn);
         document.getElementById('google-create').addEventListener('click', promptGoogleSignIn);
+        document.getElementById('card-close').addEventListener('click', () => window.history.back());
 
         window.addEventListener('DOMContentLoaded', () => {
             initializeGoogleAuth();
