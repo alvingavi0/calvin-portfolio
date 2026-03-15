@@ -270,8 +270,8 @@ function initializeGoogleAuth() {
     });
 }
 
-async function tryQuickLogin() {
-    showAdminModal();
+function tryQuickLogin() {
+    window.location.href = '/login.html';
 }
 
 document.addEventListener('keydown', e => {
