@@ -50,6 +50,47 @@ app.post('/login', (req,res)=>{
     }
 });
 
+// fresh admin auth check endpoint
+app.get('/api/fresh-admin-status', (req,res)=>{
+    res.json({authenticated: !!req.session.authenticated});
+});
+
+// session-protection middleware for fresh routes
+function requireFreshAuth(req,res,next) {
+    if (req.session && req.session.authenticated) {
+        return next();
+    }
+    res.status(401).json({error:'Unauthorized'});
+}
+
+// new route for fresh Google login flow
+app.post('/api/fresh-google-login', async (req,res) => {
+    const {credential} = req.body;
+    if (!credential) return res.status(400).json({error:'Missing credential'});
+    try {
+        const verify = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`);
+        if (!verify.ok) return res.status(401).json({error:'Invalid token'});
+
+        const token = await verify.json();
+        if (token.aud !== GOOGLE_CLIENT_ID) return res.status(401).json({error:'Audience mismatch'});
+        const verified = token.email_verified === 'true' || token.email_verified === true;
+        if (!verified) return res.status(401).json({error:'Email not verified'});
+        if (!token.email || token.email.toLowerCase() !== ALLOWED_ADMIN_EMAIL.toLowerCase()) {
+            return res.status(403).json({error:'Email not allowed'});
+        }
+
+        req.session.authenticated = true;
+        res.sendStatus(200);
+    } catch (err) {
+        console.error('fresh-google-login', err);
+        res.status(500).json({error:'Google login error'});
+    }
+});
+
+app.get('/fresh-logout', (req,res)=>{
+    req.session.destroy(()=>res.redirect('/fresh-index.html'));
+});
+
 // endpoint to check whether password exists
 app.get('/api/password', (req,res)=>{
     res.json({exists: fs.existsSync(PASS_FILE)});
