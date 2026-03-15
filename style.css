@@ -91,7 +91,7 @@ input, textarea { font-family: inherit; border: none; outline: none; }
  .nav-actions { display: flex; align-items: center; gap: 12px; }
  .header-mail { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border-color); color: var(--text-secondary); font-size: 0.95rem; transition: all var(--transition-normal); }
  .header-mail:hover { background: var(--primary-color); color: #fff; border-color: var(--primary-color); transform: translateY(-1px); }
- .theme-toggle { width: 40px; height: 40px; border-radius: var(--radius-full); background: var(--bg-tertiary); color: var(--text-primary); display: flex; align-items: center; justify-content: center; margin-right: 10px; }
+ .theme-toggle { width: 40px; height: 40px; border-radius: var(--radius-full); background: var(--bg-tertiary); color: var(--text-primary); display: flex; align-items: center; justify-content: center; margin-right: 20px; }
 .theme-toggle:hover { background: var(--primary-color); color: white; }
 .hamburger { display: none; width: 30px; height: 20px; position: relative; background: transparent; }
 .hamburger span { display: block; position: absolute; width: 100%; height: 2px; background: var(--text-primary); border-radius: 2px; }
