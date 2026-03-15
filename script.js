@@ -312,7 +312,11 @@ function attachModalSubmitHandler() {
             });
 
             if (res.ok) {
-                window.location.href = '/admin.html';
+                // After first-time creation, switch to login mode instead of instant admin redirect.
+                renderAuthForm(true);
+                if (document.getElementById('admin-modal-info')) {
+                    document.getElementById('admin-modal-info').textContent = 'Password created! Please login with your new password.';
+                }
                 return;
             }
 
