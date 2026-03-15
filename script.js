@@ -36,12 +36,12 @@ document.addEventListener('DOMContentLoaded', function() {
     renderProjects();          // new function below
     initializeGoogleAuth();
 
-    // handle hidden admin link click (keyboard sequence still works)
+    // handle hidden admin link click to separate login page
     const adminLink = document.getElementById('admin-link');
     if (adminLink) {
         adminLink.addEventListener('click', e => {
             e.preventDefault();
-            showAdminModal();
+            window.location.href = '/login.html';
         });
     }
 });

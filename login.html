@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Calvin Portfolio</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body.admin-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .admin-card { max-width: 420px; width: 90%; margin: 24px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="admin-page">
+    <main class="admin-card">
+        <h1 style="text-align:center; margin-bottom:1rem; color:var(--primary-color);">Admin Access</h1>
+
+        <div id="login-panel">
+            <form id="login-form" class="form-card">
+                <h2>Sign In</h2>
+                <div class="form-group">
+                    <label for="pwd">Password</label>
+                    <input type="password" id="pwd" name="pwd" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+                <p id="login-error" style="color:red;display:none; margin-top:.75rem;">Invalid password</p>
+            </form>
+
+            <div class="modal-divider">or</div>
+            <button id="google-login" class="btn btn-google">Continue with Google</button>
+        </div>
+
+        <div id="create-panel" class="hidden">
+            <form id="create-form" class="form-card">
+                <h2>Create Admin Password</h2>
+                <div class="form-group">
+                    <label for="newpwd">Password</label>
+                    <input type="password" id="newpwd" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirm">Confirm</label>
+                    <input type="password" id="confirm" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Create</button>
+                <p id="create-error" style="color:red;display:none; margin-top:.75rem;">Passwords must match</p>
+            </form>
+            <div class="modal-divider">or</div>
+            <button id="google-create" class="btn btn-google">Continue with Google</button>
+        </div>
+
+    </main>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com';
+
+        function handleGoogleCredentialResponse(response) {
+            if (response && response.credential) {
+                localStorage.setItem('adminGoogleToken', response.credential);
+                window.location.href = '/admin.html';
+                return;
+            }
+            document.getElementById('login-error').textContent = 'Google authentication failed';
+            document.getElementById('login-error').style.display = 'block';
+        }
+
+        function initializeGoogleAuth() {
+            if (window.google && GOOGLE_CLIENT_ID) {
+                google.accounts.id.initialize({
+                    client_id: GOOGLE_CLIENT_ID,
+                    callback: handleGoogleCredentialResponse,
+                    auto_select: false,
+                    cancel_on_tap_outside: true
+                });
+            }
+        }
+
+        function promptGoogleSignIn() {
+            if (!window.google || !GOOGLE_CLIENT_ID) {
+                alert('Google auth is not configured. Please set your Google Client ID in login.html.');
+                return;
+            }
+            google.accounts.id.prompt();
+        }
+
+        async function showAppropriateForm() {
+            try {
+                const res = await fetch('/api/status');
+                const { authenticated, exists } = await res.json();
+                if (authenticated) {
+                    window.location.href = '/admin.html';
+                    return;
+                }
+                document.getElementById('login-panel').style.display = 'block';
+                if (exists) {
+                    document.getElementById('create-panel').classList.add('hidden');
+                    document.getElementById('login-panel').classList.remove('hidden');
+                } else {
+                    document.getElementById('create-panel').classList.remove('hidden');
+                    document.getElementById('login-panel').classList.add('hidden');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        document.getElementById('login-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            const pwd = document.getElementById('pwd').value;
+            const res = await fetch('/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({pwd}) });
+            if (res.ok) {
+                window.location.href = '/admin.html';
+            } else {
+                document.getElementById('login-error').style.display = 'block';
+            }
+        });
+
+        document.getElementById('create-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            const p1 = document.getElementById('newpwd').value;
+            const p2 = document.getElementById('confirm').value;
+            if (p1 !== p2) {
+                document.getElementById('create-error').style.display = 'block';
+                return;
+            }
+            const res = await fetch('/api/password', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({pwd:p1}) });
+            if (res.ok) {
+                window.location.href = '/admin.html';
+            } else {
+                document.getElementById('create-error').textContent = 'Could not create password';
+                document.getElementById('create-error').style.display = 'block';
+            }
+        });
+
+        document.getElementById('google-login').addEventListener('click', promptGoogleSignIn);
+        document.getElementById('google-create').addEventListener('click', promptGoogleSignIn);
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeGoogleAuth();
+            showAppropriateForm();
+        });
+    </script>
+</body>
+</html>

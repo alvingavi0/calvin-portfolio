@@ -11,31 +11,6 @@ alvingavi0<!DOCTYPE html>
     </style>
 </head>
 <body class="admin-page">
-    <div id="login-container" class="admin-card">
-        <form id="create-form" style="display:none;">
-            <h2 class="section-title">Set Admin Password</h2>
-            <div class="form-group">
-                <label for="newpwd">Password</label>
-                <input type="password" id="newpwd" required>
-            </div>
-            <div class="form-group">
-                <label for="confirm">Confirm</label>
-                <input type="password" id="confirm" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Create</button>
-            <p id="create-error" style="color:red;display:none;">Passwords must match</p>
-        </form>
-        <form id="login-form" style="display:none;">
-            <h2 class="section-title">Admin Login</h2>
-            <div class="form-group">
-                <label for="pwd">Password</label>
-                <input type="password" id="pwd" name="pwd" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Login</button>
-            <p id="login-error" style="color:red;display:none;">Invalid password</p>
-        </form>
-    </div>
-
     <div id="dashboard" class="admin-dashboard admin-card" style="display:none;">
         <h2 class="section-title">Portfolio Admin</h2>
         <section>
@@ -108,73 +83,34 @@ alvingavi0<!DOCTYPE html>
             }
         }
 
-        async function showAppropriateForm() {
-            const res = await fetch('/api/status');
-            const {authenticated, exists} = await res.json();
-            if (authenticated) {
-                // already logged in, go straight to dashboard
-                document.getElementById('login-container').style.display='none';
-                document.getElementById('dashboard').style.display='block';
-                loadAdminData();
-                return;
-            }
-            if (exists) {
-                document.getElementById('login-form').style.display='block';
-            } else {
-                document.getElementById('create-form').style.display='block';
-            }
-        }
-
-        async function createPwd(e) {
-            e.preventDefault();
-            const p1 = document.getElementById('newpwd').value;
-            const p2 = document.getElementById('confirm').value;
-            if (p1 !== p2) {
-                document.getElementById('create-error').style.display='block';
-                return;
-            }
-            const res = await fetch('/api/password', {
-                method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({pwd:p1})
-            });
-            if (res.ok) {
-                document.getElementById('login-container').style.display='none';
-                document.getElementById('dashboard').style.display='block';
-                loadAdminData();
-            } else alert('Could not create password');
-        }
-
-        async function login(e) {
-            e.preventDefault();
-            const pwd = e.target.pwd.value;
-            const res = await fetch('/login', {
-                method: 'POST',
-                headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({pwd})
-            });
-            if (res.ok) {
-                document.getElementById('login-container').style.display='none';
-                document.getElementById('dashboard').style.display='block';
-                loadAdminData();
-            } else {
-                document.getElementById('login-error').style.display='block';
+        async function ensureAdmin() {
+            try {
+                const res = await fetch('/api/status');
+                const {authenticated} = await res.json();
+                if (!authenticated) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+                // user is authenticated, show admin dashboard
+                document.getElementById('dashboard').style.display = 'block';
+                await loadAdminData();
+            } catch (err) {
+                console.error('Admin check failed', err);
+                window.location.href = '/login.html';
             }
         }
-        document.getElementById('login-form').addEventListener('submit', login);
-        document.getElementById('create-form').addEventListener('submit', createPwd);
 
         async function loadAdminData() {
-            // load contact
-            const info = await fetch('/api/contact').then(r=>r.json());
+            const info = await fetch('/api/contact').then(r => r.json());
             document.getElementById('admin-email').value = info.email;
             document.getElementById('admin-phone').value = info.phone;
             document.getElementById('admin-whatsapp').value = info.whatsapp;
             document.getElementById('admin-location').value = info.location;
-            // load about page HTML
-            const about = await fetch('about.html').then(r=>r.text());
+            const about = await fetch('about.html').then(r => r.text());
             document.getElementById('about-editor').value = about;
         }
-        // remaining handlers unchanged...
-        document.getElementById('contact-form-admin').addEventListener('submit', async e=>{
+
+        document.getElementById('contact-form-admin').addEventListener('submit', async e => {
             e.preventDefault();
             const payload = {
                 email: document.getElementById('admin-email').value,
@@ -187,30 +123,34 @@ alvingavi0<!DOCTYPE html>
             });
             alert('Contact updated');
         });
+
         document.getElementById('cv-upload').addEventListener('submit', async e=>{
             e.preventDefault();
             const form = new FormData(e.target);
             await fetch('/api/upload/cv', {method:'POST', body: form});
             alert('CV uploaded');
         });
+
         document.getElementById('projects-upload').addEventListener('submit', async e=>{
             e.preventDefault();
             const form = new FormData(e.target);
             await fetch('/api/upload/projects', {method:'POST', body: form});
             alert('Projects JSON uploaded');
         });
+
         document.getElementById('about-save').addEventListener('click', async ()=>{
             const html = document.getElementById('about-editor').value;
             await fetch('/api/about', {method:'POST', headers:{'Content-Type':'text/html'}, body: html});
             alert('About page saved');
         });
+
         document.getElementById('logout').addEventListener('click', async ()=>{
             await fetch('/logout');
-            location.reload();
+            window.location.href = '/login.html';
         });
 
-        // initialize
-        showAppropriateForm();
+        window.addEventListener('DOMContentLoaded', ensureAdmin);
+
     </script>
 </body>
 </html>
