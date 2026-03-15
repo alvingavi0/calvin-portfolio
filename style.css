@@ -294,20 +294,60 @@ input, textarea { font-family: inherit; border: none; outline: none; }
 .admin-modal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.6);
+    background: rgba(0,0,0,0.65);
     display: none;
     align-items: center;
     justify-content: center;
-    z-index: 2000;
+    z-index: 9999;
 }
 .admin-modal {
+    width: min(440px, 90%);
+    max-width: 480px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 24px 50px rgba(0,0,0,0.25);
+    padding: 28px;
+    border-radius: var(--radius-xl);
+    position: relative;
+    text-align: center;
+    font-family: var(--font-secondary);
+}
+.admin-modal h2 {
+    font-size: 24px;
+    margin-bottom: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.admin-modal p {
+    margin: 0;
+}
+.admin-modal input {
+    margin-bottom: 14px;
+}
+.admin-modal .btn {
+    width: 100%;
+}
+..admin-modal .modal-error {
+    margin-top: 10px;
+    display: none;
+}
+
+.admin-card {
     background: var(--card-bg);
     padding: 30px 40px;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-xl);
-    width: 320px;
+    width: min(520px, 90%);
     max-width: 90%;
     text-align: center;
+    margin: 0 auto;
+}
+
+.admin-dashboard {
+    max-width: 820px;
+    margin: 0 auto;
+}
+
 }
 .admin-modal h2 { margin-bottom: 20px; font-size: 22px; color: var(--text-primary); }
 .admin-modal input[type=password] {
