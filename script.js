@@ -125,6 +125,7 @@ loadContactInfo();
 
 // hidden admin access: type 'admin' or press ctrl+shift+a to attempt quick login
 let keyBuffer = '';
+let adminMode = 'login'; // login or signup
 
 // modal helper --------------------------------------------------------------
 function createAdminModal() {
@@ -163,6 +164,7 @@ function createAdminModal() {
         const info = document.getElementById('admin-modal-info');
         const error = document.getElementById('admin-modal-error');
 
+        adminMode = exists ? 'login' : 'signup';
         if (error) error.style.display = 'none';
 
         if (exists) {
@@ -173,6 +175,7 @@ function createAdminModal() {
                 <button type="submit" class="btn btn-primary">Login</button>
                 <div class="modal-divider">or</div>
                 <button type="button" id="google-auth-btn" class="btn btn-google">Continue with Google</button>
+                <button type="button" id="admin-switch-mode" class="btn btn-outline">Create password instead</button>
             `;
         } else {
             title.textContent = 'Create Admin Password';
@@ -183,10 +186,17 @@ function createAdminModal() {
                 <button type="submit" class="btn btn-primary">Create</button>
                 <div class="modal-divider">or</div>
                 <button type="button" id="google-auth-btn" class="btn btn-google">Continue with Google</button>
+                <button type="button" id="admin-switch-mode" class="btn btn-outline">Have password? Login instead</button>
             `;
         }
-        attachModalSubmitHandler(exists);
+
+        attachModalSubmitHandler();
         attachGoogleButton();
+
+        const switchBtn = document.getElementById('admin-switch-mode');
+        if (switchBtn) {
+            switchBtn.addEventListener('click', () => renderAuthForm(!exists));
+        }
     }
 
     function attachGoogleButton() {
@@ -217,9 +227,9 @@ function createAdminModal() {
 }
 
 // separate handler attachment so we can change behaviour
-function attachModalSubmitHandler(existing) {
+function attachModalSubmitHandler() {
     const form = document.getElementById('admin-modal-form');
-    form.addEventListener('submit', async e => {
+    form.onsubmit = async e => {
         e.preventDefault();
 
         const errorEl = document.getElementById('admin-modal-error');
@@ -230,15 +240,18 @@ function attachModalSubmitHandler(existing) {
 
         const pwd = document.getElementById('admin-modal-pwd').value;
 
-        if (existing) {
+        if (adminMode === 'login') {
             const res = await fetch('/login', {
-                method:'POST', headers:{'Content-Type':'application/json'},
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({pwd})
             });
+
             if (res.ok) {
                 window.location.href = '/admin.html';
                 return;
             }
+
             if (errorEl) {
                 errorEl.textContent = 'Wrong password. Please try again or create a new one.';
                 errorEl.style.display = 'block';
@@ -256,9 +269,11 @@ function attachModalSubmitHandler(existing) {
         }
 
         const res = await fetch('/api/password', {
-            method:'POST', headers:{'Content-Type':'application/json'},
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({pwd})
         });
+
         if (res.ok) {
             window.location.href = '/admin.html';
             return;
@@ -268,7 +283,7 @@ function attachModalSubmitHandler(existing) {
             errorEl.textContent = 'Failed to set password. Please try again.';
             errorEl.style.display = 'block';
         }
-    });
+    };
 }
 
 
