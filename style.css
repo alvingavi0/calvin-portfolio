@@ -88,7 +88,7 @@ input, textarea { font-family: inherit; border: none; outline: none; }
 .nav-link::after { content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 2px; background: var(--primary-color); transition: width var(--transition-normal); }
 .nav-link:hover::after, .nav-link.active::after { width: 100%; }
 .nav-link:hover, .nav-link.active { color: var(--primary-color); }
-..nav-menu { display: flex; align-items: center; gap: 90px !important; }
+.nav-menu { display: flex; align-items: center; gap: 90px !important; }
 .nav-actions { display: flex; align-items: center; gap: 12px; margin-left: 70px !important; }
 .header-mail { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border-color); color: var(--text-secondary); font-size: 0.95rem; transition: all var(--transition-normal); }
  .header-mail:hover { background: var(--primary-color); color: #fff; border-color: var(--primary-color); transform: translateY(-1px); }
