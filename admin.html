@@ -7,9 +7,6 @@ alvingavi0<!DOCTYPE html>
     <link rel="stylesheet" href="style.css">
     <style>
         /* login/dashboard layout is handled by global styles */
-        /* body centering only for admin page */
-        body.admin-page { /* already defined in style.css */ }
-        .admin-dashboard { /* visibility toggled by JS */ }
         .hidden { display:none; }
     </style>
 </head>
@@ -74,7 +71,43 @@ alvingavi0<!DOCTYPE html>
         <button id="logout" class="btn btn-primary" style="margin-top:20px;">Logout</button>
     </div>
 
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script>
+        const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com'; // replace with your actual client ID
+
+        function initializeGoogleAuth() {
+            if (window.google && GOOGLE_CLIENT_ID) {
+                google.accounts.id.initialize({
+                    client_id: GOOGLE_CLIENT_ID,
+                    callback: handleGoogleCredentialResponse,
+                    auto_select: false
+                });
+            }
+        }
+
+        function promptGoogleSignIn() {
+            if (!window.google || !GOOGLE_CLIENT_ID) {
+                alert('Google auth is not configured. Please set your Google Client ID.');
+                return;
+            }
+            google.accounts.id.prompt();
+        }
+
+        function handleGoogleCredentialResponse(response) {
+            if (response && response.credential) {
+                // Token can be verified on the server side for production security.
+                // For this demo, if a credential is returned we treat as success.
+                localStorage.setItem('adminGoogleToken', response.credential);
+                window.location.href = '/admin.html';
+            } else {
+                const err = document.getElementById('admin-modal-error');
+                if (err) {
+                    err.textContent = 'Google authentication failed. Please try again.';
+                    err.style.display = 'block';
+                }
+            }
+        }
+
         async function showAppropriateForm() {
             const res = await fetch('/api/status');
             const {authenticated, exists} = await res.json();

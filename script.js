@@ -11,7 +11,19 @@
  * - Form handling
  */
 
+function loadGoogleIdScript() {
+    if (document.getElementById('google-identity-script')) return;
+    const s = document.createElement('script');
+    s.id = 'google-identity-script';
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.async = true;
+    s.defer = true;
+    document.body.appendChild(s);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Load Google sign-in script across the site
+    loadGoogleIdScript();
     // Initialize all functions
     initLoader();
     initNavigation();
@@ -22,6 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initSmoothScroll();
     initContactForm();
     renderProjects();          // new function below
+    initializeGoogleAuth();
 
     // handle hidden admin link click (keyboard sequence still works)
     const adminLink = document.getElementById('admin-link');
@@ -147,6 +160,8 @@ function createAdminModal() {
             form.innerHTML = `
                 <input type="password" id="admin-modal-pwd" placeholder="Password" required autofocus />
                 <button type="submit" class="btn btn-primary">Submit</button>
+                <div class="modal-divider">or</div>
+                <button type="button" id="google-auth-btn" class="btn btn-google">Sign in with Google</button>
             `;
         } else {
             document.getElementById('admin-modal-title').textContent = 'Set Admin Password';
@@ -154,9 +169,22 @@ function createAdminModal() {
                 <input type="password" id="admin-modal-pwd" placeholder="Password" required autofocus />
                 <input type="password" id="admin-modal-confirm" placeholder="Confirm" required />
                 <button type="submit" class="btn btn-primary">Create</button>
+                <div class="modal-divider">or</div>
+                <button type="button" id="google-auth-btn" class="btn btn-google">Sign up with Google</button>
             `;
         }
         attachModalSubmitHandler(exists);
+
+        const googleBtn = document.getElementById('google-auth-btn');
+        if (googleBtn) {
+            googleBtn.addEventListener('click', () => {
+                if (window.google) {
+                    google.accounts.id.prompt();
+                } else {
+                    alert('Google Identity Services is not loaded yet. Please reload the page and try again.');
+                }
+            });
+        }
     }).catch(console.error);
     // allow escape key
     document.addEventListener('keydown', e => {
@@ -219,6 +247,29 @@ function hideAdminModal() {
     if (overlay) overlay.style.display = 'none';
 }
 
+function initializeGoogleAuth() {
+    const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com'; // replace with your actual client ID
+    if (!window.google) return;
+
+    google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: response => {
+            if (response && response.credential) {
+                localStorage.setItem('adminGoogleToken', response.credential);
+                window.location.href = '/admin.html';
+            } else {
+                const err = document.getElementById('admin-modal-error');
+                if (err) {
+                    err.textContent = 'Google authentication failed. Please try again.';
+                    err.style.display = 'block';
+                }
+            }
+        },
+        auto_select: false,
+        cancel_on_tap_outside: true
+    });
+}
+
 async function tryQuickLogin() {
     showAdminModal();
 }
@@ -228,11 +279,13 @@ document.addEventListener('keydown', e => {
         tryQuickLogin();
         return;
     }
-    keyBuffer += e.key.toLowerCase();
-    if (keyBuffer.endsWith('admin')) {
+    // Collect letters and check the typed sequence for admin keyword (case-insensitive)
+    keyBuffer += e.key;
+    if (keyBuffer.toLowerCase().endsWith('admin')) {
+        keyBuffer = '';
         tryQuickLogin();
     }
-    if (keyBuffer.length > 10) keyBuffer = keyBuffer.slice(-10);
+    if (keyBuffer.length > 12) keyBuffer = keyBuffer.slice(-12);
 });
 
 // subtle parallax for hero background shapes

@@ -326,10 +326,68 @@ input, textarea { font-family: inherit; border: none; outline: none; }
 }
 .admin-modal .btn {
     width: 100%;
+    background: var(--primary);
+    color: #ffffff;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: transform 0.15s ease, background 0.2s ease;
 }
+.admin-modal .btn:hover {
+    transform: translateY(-1px);
+    background: var(--accent);
+}
+.admin-modal .btn-google {
+    width: 100%;
+    background: #ffffff;
+    color: #202124;
+    border: 1px solid #dcdce0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 12px;
+}
+.admin-modal .btn-google:hover {
+    background: #f7f8fb;
+}
+.admin-modal .btn-google:before {
+    content: 'G';
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #4285F4, #34A853, #FBBC05, #EA4335);
+    color: #fff;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.admin-modal .modal-divider {
+    text-align: center;
+    margin: 16px 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    position: relative;
+}
+.admin-modal .modal-divider::before,
+.admin-modal .modal-divider::after {
+    content: '';
+    height: 1px;
+    width: 40%;
+    background: var(--border-color);
+    position: absolute;
+    top: 50%;
+}
+.admin-modal .modal-divider::before { left: 0; }
+.admin-modal .modal-divider::after { right: 0; }
 .admin-modal .modal-error {
     margin-top: 10px;
     display: none;
+    color: red;
 }
 
 .admin-card {
