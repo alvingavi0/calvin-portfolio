@@ -232,14 +232,7 @@ function attachModalSubmitHandler(existing) {
 
 
 function showAdminModal() {
-    createAdminModal();
-    const overlay = document.getElementById('admin-modal-overlay');
-    overlay.style.display = 'flex';
-    // wait a moment for fetch to populate inputs, then focus
-    setTimeout(() => {
-        const pwdField = document.getElementById('admin-modal-pwd');
-        if (pwdField) pwdField.focus();
-    }, 100);
+    tryQuickLogin();
 }
 
 function hideAdminModal() {
@@ -284,9 +277,10 @@ document.addEventListener('keydown', e => {
         tryQuickLogin();
         return;
     }
-    // Collect letters and check the typed sequence for admin keyword (case-insensitive)
+    // collect letters and check for admin or login typed as a trigger
     keyBuffer += e.key;
-    if (keyBuffer.toLowerCase().endsWith('admin')) {
+    const lower = keyBuffer.toLowerCase();
+    if (lower.endsWith('admin') || lower.endsWith('login')) {
         keyBuffer = '';
         tryQuickLogin();
     }
