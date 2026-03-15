@@ -270,8 +270,13 @@ function initializeGoogleAuth() {
     });
 }
 
+function getLoginUrl() {
+    if (window.location.protocol === 'file:') return 'login.html';
+    return '/login.html';
+}
+
 function tryQuickLogin() {
-    window.location.href = '/login.html';
+    window.location.href = getLoginUrl();
 }
 
 document.addEventListener('keydown', e => {
